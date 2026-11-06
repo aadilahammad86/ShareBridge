@@ -136,4 +136,54 @@ public sealed partial class MainPage : Page
         var cleaned = _tempManager.CleanStaleSessions(TimeSpan.Zero);
         StatusMessage.Text = $"Cleaned {cleaned} temporary session directories.";
     }
+
+    private async void OnCheckUpdatesClick(object sender, RoutedEventArgs e)
+    {
+        CheckUpdatesButton.IsEnabled = false;
+        UpdateStatusText.Text = "Checking GitHub Releases...";
+        UpdateStatusText.Foreground = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush;
+        UpdateDownloadLink.Visibility = Visibility.Collapsed;
+
+        try
+        {
+            using var client = new System.Net.Http.HttpClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("ShareBridge-Updater");
+
+            var url = "https://api.github.com/repos/aadilahammad86/ShareBridge/releases/latest";
+            var response = await client.GetAsync(url);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                UpdateStatusText.Text = "• Up to date (v1.0.0 is the latest release)";
+                UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorSuccessBrush"] as Brush;
+                return;
+            }
+
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var tagName = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
+
+            if (!string.IsNullOrEmpty(tagName) && !tagName.Equals("v1.0.0", StringComparison.OrdinalIgnoreCase))
+            {
+                UpdateStatusText.Text = $"• New version {tagName} available!";
+                UpdateStatusText.Foreground = Application.Current.Resources["AccentTextFillColorPrimaryBrush"] as Brush;
+                UpdateDownloadLink.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                UpdateStatusText.Text = "• Up to date (v1.0.0 is the latest release)";
+                UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorSuccessBrush"] as Brush;
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText.Text = $"• Check failed: {ex.Message}";
+            UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+        }
+        finally
+        {
+            CheckUpdatesButton.IsEnabled = true;
+        }
+    }
 }

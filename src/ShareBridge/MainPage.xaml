@@ -105,6 +105,28 @@
                             Click="OnCleanTempClick"
                             CornerRadius="8"
                             Padding="16,8" />
+
+                        <Button
+                            x:Name="CheckUpdatesButton"
+                            Content="Check for Updates"
+                            Click="OnCheckUpdatesClick"
+                            CornerRadius="8"
+                            Padding="16,8">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE895;" FontSize="14" />
+                                        <TextBlock Text="Check for Updates" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="Installed Version: v1.0.0" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="UpdateStatusText" Style="{ThemeResource CaptionTextBlockStyle}" FontWeight="SemiBold" />
+                        <HyperlinkButton x:Name="UpdateDownloadLink" Visibility="Collapsed" NavigateUri="https://github.com/aadilahammad86/ShareBridge/releases" Padding="0" Content="Download Update" />
                     </StackPanel>
 
                     <TextBlock
