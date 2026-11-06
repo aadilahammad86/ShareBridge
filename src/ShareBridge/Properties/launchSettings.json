@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ShareBridge (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ShareBridge (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

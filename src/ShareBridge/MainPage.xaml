@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="ShareBridge.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="720" Margin="32,24,32,32" Spacing="24">
+
+            <!-- Hero Section -->
+            <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE72D;" FontSize="28" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    <TextBlock Text="Share Bridge" Style="{ThemeResource TitleLargeTextBlockStyle}" FontWeight="Bold" />
+                </StackPanel>
+                <TextBlock
+                    Text="Bridges traditional desktop applications and browser shortcuts directly into the native Windows 11 Share flyout."
+                    Style="{ThemeResource BodyTextBlockStyle}"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                
+                <!-- Offline Badge -->
+                <Border
+                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="10,4"
+                    HorizontalAlignment="Left"
+                    Margin="0,4,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE72E;" FontSize="12" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                        <TextBlock Text="100% Offline • Zero Telemetry" Style="{ThemeResource CaptionTextBlockStyle}" FontWeight="Medium" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Instructions Card -->
+            <Border
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="How to Use" FontWeight="SemiBold" FontSize="16" />
+                    <TextBlock
+                        Text="1. Right-click any file, picture, or document in File Explorer."
+                        Style="{ThemeResource BodyTextBlockStyle}" />
+                    <TextBlock
+                        Text="2. Click the native Windows 'Share' icon in the context menu."
+                        Style="{ThemeResource BodyTextBlockStyle}" />
+                    <TextBlock
+                        Text="3. Choose 'Share Bridge' from the target list."
+                        Style="{ThemeResource BodyTextBlockStyle}" />
+                    <TextBlock
+                        Text="4. Select Telegram Desktop, WhatsApp Web, or Clipboard to immediately dispatch your content."
+                        Style="{ThemeResource BodyTextBlockStyle}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Detected Adapters Card -->
+            <Border
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="20">
+                <StackPanel Spacing="16">
+                    <Grid>
+                        <TextBlock Text="Available Target Adapters" FontWeight="SemiBold" FontSize="16" VerticalAlignment="Center" />
+                        <Button Content="Refresh" HorizontalAlignment="Right" Click="OnRefreshClick" Style="{ThemeResource SubtleButtonStyle}" />
+                    </Grid>
+
+                    <StackPanel x:Name="AdaptersListPanel" Spacing="10">
+                        <!-- Dynamically populated in code-behind -->
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Maintenance & Actions Card -->
+            <Border
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="20">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Actions &amp; Testing" FontWeight="SemiBold" FontSize="16" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button
+                            x:Name="TestPickerButton"
+                            Content="Test Share Picker"
+                            Click="OnTestPickerClick"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            CornerRadius="8"
+                            Padding="16,8" />
+
+                        <Button
+                            x:Name="ClearTempButton"
+                            Content="Clean Stale Temp Files"
+                            Click="OnCleanTempClick"
+                            CornerRadius="8"
+                            Padding="16,8" />
+                    </StackPanel>
+
+                    <TextBlock
+                        x:Name="StatusMessage"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

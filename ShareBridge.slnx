@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ShareBridge.Adapters/ShareBridge.Adapters.csproj" />
+    <Project Path="src/ShareBridge.Core/ShareBridge.Core.csproj" />
+    <Project Path="src/ShareBridge/ShareBridge.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ShareBridge.Tests/ShareBridge.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,25 @@
+# Visual Studio / .NET build artifacts
+bin/
+obj/
+publish/
+publish_pkg/
+*.msix
+*.appx
+*.cer
+*.pfx
+*.user
+*.suo
+.vs/
+_pkg/
+
+# Windows temp & OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# JetBrains / Rider / VS Code
+.idea/
+.vscode/
+*.swp
+*.lock
