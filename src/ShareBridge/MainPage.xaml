@@ -7,8 +7,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="720" Margin="32,24,32,32" Spacing="24">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="720" Margin="32,24,32,32" Spacing="24">
 
             <!-- Hero Section -->
             <StackPanel Spacing="8">
@@ -124,9 +125,15 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="Installed Version: v1.0.0" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="InstalledVersionText" Text="Installed Version: v1.0.1" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <TextBlock x:Name="UpdateStatusText" Style="{ThemeResource CaptionTextBlockStyle}" FontWeight="SemiBold" />
-                        <HyperlinkButton x:Name="UpdateDownloadLink" Visibility="Collapsed" NavigateUri="https://github.com/aadilahammad86/ShareBridge/releases" Padding="0" Content="Download Update" />
+                        <HyperlinkButton x:Name="UpdateDownloadLink" Visibility="Collapsed" NavigateUri="https://github.com/aadilahammad86/ShareBridge/releases" Padding="0" Content="Download in Browser" />
+                    </StackPanel>
+
+                    <!-- Inline Download and Installation Progress -->
+                    <StackPanel x:Name="UpdateProgressPanel" Visibility="Collapsed" Spacing="6" Margin="0,4,0,0">
+                        <ProgressBar x:Name="UpdateProgressBar" Minimum="0" Maximum="100" Value="0" HorizontalAlignment="Stretch" Height="6" CornerRadius="3" />
+                        <TextBlock x:Name="UpdateProgressDetails" Text="Downloading update..." Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
 
                     <TextBlock
@@ -138,4 +145,45 @@
 
         </StackPanel>
     </ScrollViewer>
+
+    <!-- Tinted Full-Window Background Restart Overlay -->
+    <Grid x:Name="UpdateRestartOverlay"
+          Visibility="Collapsed"
+          Background="#D90B0F19"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch">
+        <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="36,32"
+                MaxWidth="460"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            <StackPanel Spacing="20" HorizontalAlignment="Center">
+                <Border Width="72" Height="72" CornerRadius="36" Background="{ThemeResource AccentFillColorDefaultBrush}" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE896;" FontSize="32" Foreground="White" />
+                </Border>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Update Ready!" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
+                    <TextBlock x:Name="UpdateRestartSubtitle"
+                               Text="Share Bridge has been updated in the background. Restart now to apply the new version."
+                               FontSize="14"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+                <Button x:Name="RestartAppButton"
+                        Content="Restart Share Bridge"
+                        Click="OnRestartAppClick"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        HorizontalAlignment="Center"
+                        Padding="32,10"
+                        CornerRadius="8"
+                        FontSize="15"
+                        FontWeight="SemiBold" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Grid>
 </Page>

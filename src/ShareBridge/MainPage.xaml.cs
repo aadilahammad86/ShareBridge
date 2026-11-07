@@ -1,5 +1,10 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
+using System.Reflection;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -23,7 +28,25 @@ public sealed partial class MainPage : Page
         _tempManager = new TempFileManager();
         _registry = new AdapterRegistry();
 
-        Loaded += (s, e) => RefreshAdapters();
+        Loaded += (s, e) =>
+        {
+            RefreshAdapters();
+            InstalledVersionText.Text = $"Installed Version: v{GetRunningVersion()}";
+        };
+    }
+
+    private static string GetRunningVersion()
+    {
+        try
+        {
+            var v = Windows.ApplicationModel.Package.Current.Id.Version;
+            return $"{v.Major}.{v.Minor}.{v.Build}";
+        }
+        catch
+        {
+            var v = Assembly.GetExecutingAssembly().GetName().Version;
+            return v != null ? $"{v.Major}.{v.Minor}.{v.Build}" : "1.0.1";
+        }
     }
 
     private void RefreshAdapters()
@@ -143,10 +166,11 @@ public sealed partial class MainPage : Page
         UpdateStatusText.Text = "Checking GitHub Releases...";
         UpdateStatusText.Foreground = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush;
         UpdateDownloadLink.Visibility = Visibility.Collapsed;
+        UpdateProgressPanel.Visibility = Visibility.Collapsed;
 
         try
         {
-            using var client = new System.Net.Http.HttpClient();
+            using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ShareBridge-Updater");
 
             var url = "https://api.github.com/repos/aadilahammad86/ShareBridge/releases/latest";
@@ -154,25 +178,138 @@ public sealed partial class MainPage : Page
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                UpdateStatusText.Text = "• Up to date (v1.0.0 is the latest release)";
+                var curVer = GetRunningVersion();
+                UpdateStatusText.Text = $"• Up to date (v{curVer} is the latest release)";
                 UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorSuccessBrush"] as Brush;
                 return;
             }
 
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            var tagName = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var tagName = root.GetProperty("tag_name").GetString() ?? "";
 
-            if (!string.IsNullOrEmpty(tagName) && !tagName.Equals("v1.0.0", StringComparison.OrdinalIgnoreCase))
+            var cleanTag = tagName.TrimStart('v', 'V');
+            var currentVersionStr = GetRunningVersion();
+
+            Version.TryParse(cleanTag, out var latestVer);
+            Version.TryParse(currentVersionStr, out var currentVer);
+
+            bool isNewer = (latestVer != null && currentVer != null)
+                ? latestVer > currentVer
+                : !string.Equals(cleanTag, currentVersionStr, StringComparison.OrdinalIgnoreCase);
+
+            if (isNewer)
             {
-                UpdateStatusText.Text = $"• New version {tagName} available!";
+                UpdateStatusText.Text = $"• New version {tagName} found! Starting download...";
                 UpdateStatusText.Foreground = Application.Current.Resources["AccentTextFillColorPrimaryBrush"] as Brush;
-                UpdateDownloadLink.Visibility = Visibility.Visible;
+
+                // Find installer asset (.exe)
+                string? downloadUrl = null;
+                string assetName = $"ShareBridge-Setup-{tagName}.exe";
+
+                if (root.TryGetProperty("assets", out var assetsElem) && assetsElem.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var asset in assetsElem.EnumerateArray())
+                    {
+                        var name = asset.GetProperty("name").GetString() ?? "";
+                        if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                        {
+                            assetName = name;
+                            downloadUrl = asset.GetProperty("browser_download_url").GetString();
+                            break;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(downloadUrl))
+                {
+                    UpdateStatusText.Text = $"• {tagName} available, but no .exe asset was found.";
+                    UpdateDownloadLink.Visibility = Visibility.Visible;
+                    return;
+                }
+
+                // Show progress bar
+                UpdateProgressPanel.Visibility = Visibility.Visible;
+                UpdateProgressBar.IsIndeterminate = false;
+                UpdateProgressBar.Value = 0;
+                UpdateProgressDetails.Text = "Connecting to GitHub...";
+
+                var tempDir = Path.Combine(Path.GetTempPath(), "ShareBridgeUpdates");
+                Directory.CreateDirectory(tempDir);
+                var tempSetupPath = Path.Combine(tempDir, assetName);
+
+                // Stream download with progress
+                using (var downloadResponse = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    downloadResponse.EnsureSuccessStatusCode();
+                    var totalBytes = downloadResponse.Content.Headers.ContentLength ?? -1L;
+                    using var stream = await downloadResponse.Content.ReadAsStreamAsync();
+                    using var fileStream = new FileStream(tempSetupPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+
+                    var buffer = new byte[81920];
+                    long totalRead = 0;
+                    int read;
+
+                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    {
+                        await fileStream.WriteAsync(buffer, 0, read);
+                        totalRead += read;
+
+                        if (totalBytes > 0)
+                        {
+                            double pct = (double)totalRead / totalBytes * 100.0;
+                            UpdateProgressBar.Value = pct;
+                            UpdateProgressDetails.Text = $"Downloading {tagName}: {pct:0}% ({totalRead / 1048576.0:0.0} MB / {totalBytes / 1048576.0:0.0} MB)";
+                        }
+                        else
+                        {
+                            UpdateProgressDetails.Text = $"Downloading {tagName}: {totalRead / 1048576.0:0.0} MB";
+                        }
+                    }
+                }
+
+                // Download completed, start background silent installation with admin privileges
+                UpdateProgressDetails.Text = "Installing update with administrator privileges in background...";
+                UpdateProgressBar.IsIndeterminate = true;
+                UpdateStatusText.Text = "• Installing update...";
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = tempSetupPath,
+                    Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
+                    UseShellExecute = true,
+                    Verb = "runas"
+                };
+
+                try
+                {
+                    using var proc = Process.Start(startInfo);
+                    if (proc != null)
+                    {
+                        await proc.WaitForExitAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatusText.Text = $"• Installation cancelled or failed: {ex.Message}";
+                    UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+                    UpdateProgressPanel.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                // Installation finished successfully, show the big tinted restart overlay
+                UpdateProgressPanel.Visibility = Visibility.Collapsed;
+                UpdateStatusText.Text = $"• Update {tagName} successfully installed!";
+                UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorSuccessBrush"] as Brush;
+
+                UpdateRestartSubtitle.Text = $"Share Bridge has been updated to {tagName}. Restart now to apply the new version.";
+                UpdateRestartOverlay.Visibility = Visibility.Visible;
             }
             else
             {
-                UpdateStatusText.Text = "• Up to date (v1.0.0 is the latest release)";
+                UpdateStatusText.Text = $"• Up to date (v{currentVersionStr} is the latest version)";
                 UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorSuccessBrush"] as Brush;
             }
         }
@@ -180,10 +317,25 @@ public sealed partial class MainPage : Page
         {
             UpdateStatusText.Text = $"• Check failed: {ex.Message}";
             UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+            UpdateProgressPanel.Visibility = Visibility.Collapsed;
         }
         finally
         {
             CheckUpdatesButton.IsEnabled = true;
         }
+    }
+
+    private void OnRestartAppClick(object sender, RoutedEventArgs e)
+    {
+        var pfPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "ShareBridge", "ShareBridge.exe");
+        var launchExe = File.Exists(pfPath) ? pfPath : (Environment.ProcessPath ?? "ShareBridge.exe");
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = launchExe,
+            UseShellExecute = true
+        });
+
+        Application.Current.Exit();
     }
 }
