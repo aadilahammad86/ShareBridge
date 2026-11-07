@@ -2,7 +2,7 @@
 ; Produces a standalone, single-file setup installer: ShareBridge-Setup-v1.0.1.exe
 
 #define MyAppName "Share Bridge"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "aadilahammad86"
 #define MyAppURL "https://github.com/aadilahammad86/ShareBridge"
 #define MyAppExeName "ShareBridge.exe"
