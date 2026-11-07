@@ -6,7 +6,7 @@ $iscc = "C:\Users\sysadmin\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
 $signtool = "C:\Users\sysadmin\.nuget\packages\microsoft.windows.sdk.buildtools\10.0.28000.2957\bin\10.0.28000.0\x64\signtool.exe"
 $pfx = Join-Path $rootDir "ShareBridge_Dev.pfx"
 $issPath = Join-Path $scriptDir "ShareBridge.iss"
-$outputExe = Join-Path $rootDir "ShareBridge-Setup-v1.0.1.exe"
+$outputExe = Join-Path $rootDir "ShareBridge-Setup-v1.0.2.exe"
 
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host " Building Share Bridge Setup Installer" -ForegroundColor Cyan
@@ -41,6 +41,6 @@ if ((Test-Path $signtool) -and (Test-Path $pfx)) {
 }
 
 $fileInfo = Get-Item $outputExe
-Write-Host "`n[SUCCESS] ShareBridge-Setup-v1.0.1.exe created successfully!" -ForegroundColor Green
+Write-Host "`n[SUCCESS] ShareBridge-Setup-v1.0.2.exe created successfully!" -ForegroundColor Green
 Write-Host "Location: $outputExe" -ForegroundColor Gray
 Write-Host "Size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB" -ForegroundColor Gray

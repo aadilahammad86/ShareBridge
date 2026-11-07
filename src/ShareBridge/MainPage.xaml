@@ -125,7 +125,7 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock x:Name="InstalledVersionText" Text="Installed Version: v1.0.1" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="InstalledVersionText" Text="Installed Version: ..." Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <TextBlock x:Name="UpdateStatusText" Style="{ThemeResource CaptionTextBlockStyle}" FontWeight="SemiBold" />
                         <HyperlinkButton x:Name="UpdateDownloadLink" Visibility="Collapsed" NavigateUri="https://github.com/aadilahammad86/ShareBridge/releases" Padding="0" Content="Download in Browser" />
                     </StackPanel>

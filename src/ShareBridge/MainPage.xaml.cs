@@ -27,6 +27,7 @@ public sealed partial class MainPage : Page
         InitializeComponent();
         _tempManager = new TempFileManager();
         _registry = new AdapterRegistry();
+        InstalledVersionText.Text = $"Installed Version: v{GetRunningVersion()}";
 
         Loaded += (s, e) =>
         {
@@ -170,11 +171,37 @@ public sealed partial class MainPage : Page
 
         try
         {
-            using var client = new HttpClient();
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ShareBridge-Updater");
 
             var url = "https://api.github.com/repos/aadilahammad86/ShareBridge/releases/latest";
-            var response = await client.GetAsync(url);
+            HttpResponseMessage? response = null;
+
+            for (int attempt = 1; attempt <= 2; attempt++)
+            {
+                try
+                {
+                    response = await client.GetAsync(url);
+                    break;
+                }
+                catch (HttpRequestException) when (attempt == 1)
+                {
+                    UpdateStatusText.Text = "Connection hiccup, retrying...";
+                    await Task.Delay(1200);
+                }
+                catch (TaskCanceledException) when (attempt == 1)
+                {
+                    UpdateStatusText.Text = "Connection timed out, retrying...";
+                    await Task.Delay(1200);
+                }
+            }
+
+            if (response == null)
+            {
+                UpdateStatusText.Text = "• Offline: Unable to reach GitHub. Please check your internet connection.";
+                UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+                return;
+            }
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -184,7 +211,19 @@ public sealed partial class MainPage : Page
                 return;
             }
 
-            response.EnsureSuccessStatusCode();
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                UpdateStatusText.Text = "• GitHub request rate limit reached. Please try again in a few minutes.";
+                UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+                return;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                UpdateStatusText.Text = $"• GitHub returned HTTP {(int)response.StatusCode}. Please try again later.";
+                UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+                return;
+            }
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
@@ -312,6 +351,18 @@ public sealed partial class MainPage : Page
                 UpdateStatusText.Text = $"• Up to date (v{currentVersionStr} is the latest version)";
                 UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorSuccessBrush"] as Brush;
             }
+        }
+        catch (HttpRequestException)
+        {
+            UpdateStatusText.Text = "• Offline: Unable to connect to GitHub. Please check your internet connection.";
+            UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+            UpdateProgressPanel.Visibility = Visibility.Collapsed;
+        }
+        catch (TaskCanceledException)
+        {
+            UpdateStatusText.Text = "• Connection timed out. Please check your internet connection.";
+            UpdateStatusText.Foreground = Application.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+            UpdateProgressPanel.Visibility = Visibility.Collapsed;
         }
         catch (Exception ex)
         {
