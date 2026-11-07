@@ -8,6 +8,23 @@ public class ContextMenuInstaller
 {
     private const string BaseKey = @"Software\Classes\*\shell\ShareBridge";
 
+    public static void EnsureInstalled()
+    {
+        try
+        {
+            var exe = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(exe) && File.Exists(exe))
+            {
+                var icon = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+                Install(exe, File.Exists(icon) ? icon : exe);
+            }
+        }
+        catch
+        {
+            // Best-effort registration
+        }
+    }
+
     public static void Install(string executablePath, string? iconPath = null)
     {
         if (string.IsNullOrWhiteSpace(executablePath))
@@ -26,20 +43,78 @@ public class ContextMenuInstaller
         // Subkey shell
         var shellPath = $@"{BaseKey}\shell";
 
+        // Find installed app icons dynamically
+        var telegramIcon = FindTelegramIcon() ?? iconPath;
+        var clipboardIcon = "shell32.dll,134";
+        var whatsAppIcon = FindWhatsAppIcon() ?? "shell32.dll,135";
+        var gmailIcon = FindChromeIcon() ?? "shell32.dll,18";
+
         // 1. Telegram
-        AddSubCommand(shellPath, "01_Telegram", "Send via Telegram", $"{iconPath}", $"\"{executablePath}\" --target telegram \"%1\"");
+        AddSubCommand(shellPath, "01_Telegram", "Send via Telegram", telegramIcon, $"\"{executablePath}\" --target telegram \"%1\"");
 
         // 2. Clipboard
-        AddSubCommand(shellPath, "02_Clipboard", "Copy to Clipboard", $"{iconPath}", $"\"{executablePath}\" --target clipboard \"%1\"");
+        AddSubCommand(shellPath, "02_Clipboard", "Copy to Clipboard", clipboardIcon, $"\"{executablePath}\" --target clipboard \"%1\"");
 
         // 3. WhatsApp Web
-        AddSubCommand(shellPath, "03_WhatsApp", "Send via WhatsApp", $"{iconPath}", $"\"{executablePath}\" --target whatsapp \"%1\"");
+        AddSubCommand(shellPath, "03_WhatsApp", "Send via WhatsApp", whatsAppIcon, $"\"{executablePath}\" --target whatsapp \"%1\"");
 
         // 4. Gmail
-        AddSubCommand(shellPath, "04_Gmail", "Send via Gmail", $"{iconPath}", $"\"{executablePath}\" --target gmail \"%1\"");
+        AddSubCommand(shellPath, "04_Gmail", "Send via Gmail", gmailIcon, $"\"{executablePath}\" --target gmail \"%1\"");
 
         // 5. Open Picker Window
-        AddSubCommand(shellPath, "05_Picker", "Open Share Bridge...", $"{iconPath}", $"\"{executablePath}\" \"%1\"");
+        AddSubCommand(shellPath, "05_Picker", "Open Share Bridge...", iconPath, $"\"{executablePath}\" \"%1\"");
+    }
+
+    private static string? FindTelegramIcon()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Classes\tg\shell\open\command");
+            if (key?.GetValue(null) is string cmd && !string.IsNullOrWhiteSpace(cmd))
+            {
+                var path = cmd.Trim().Trim('"');
+                int exeIdx = path.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+                if (exeIdx > 0)
+                {
+                    var exe = path.Substring(0, exeIdx + 4);
+                    if (File.Exists(exe)) return $"{exe},0";
+                }
+            }
+        }
+        catch { }
+
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var defaultPath = Path.Combine(appData, "Telegram Desktop", "Telegram.exe");
+        return File.Exists(defaultPath) ? $"{defaultPath},0" : null;
+    }
+
+    private static string? FindWhatsAppIcon()
+    {
+        try
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var chromeWebApps = Path.Combine(localAppData, @"Google\Chrome\User Data\Default\Web Applications");
+            if (Directory.Exists(chromeWebApps))
+            {
+                var icoFiles = Directory.GetFiles(chromeWebApps, "*WhatsApp*.ico", SearchOption.AllDirectories);
+                if (icoFiles.Length > 0) return $"{icoFiles[0]},0";
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private static string? FindChromeIcon()
+    {
+        var pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var chrome = Path.Combine(pf, @"Google\Chrome\Application\chrome.exe");
+        if (File.Exists(chrome)) return $"{chrome},0";
+
+        var pfx86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var chromex86 = Path.Combine(pfx86, @"Google\Chrome\Application\chrome.exe");
+        if (File.Exists(chromex86)) return $"{chromex86},0";
+
+        return null;
     }
 
     public static void Uninstall()

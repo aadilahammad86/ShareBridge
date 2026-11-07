@@ -65,6 +65,7 @@ public partial class App : Application
         }
 
         // Standard user launch from Start Menu or Taskbar
+        ContextMenuInstaller.EnsureInstalled();
         _window = new MainWindow();
         _window.Activate();
     }
@@ -112,18 +113,13 @@ public partial class App : Application
             FilePaths = files
         };
 
-        var adapter = registry.GetAdapter(target);
-        if (adapter == null)
-        {
-            // Case-insensitive fallback search
-            adapter = registry.GetAvailableAdapters(payload)
-                .FirstOrDefault(a => a.Id.Equals(target, StringComparison.OrdinalIgnoreCase) ||
-                                     a.DisplayName.Contains(target, StringComparison.OrdinalIgnoreCase));
-        }
+        var adapter = registry.GetAllAdapters()
+            .FirstOrDefault(a => a.Id.Equals(target, StringComparison.OrdinalIgnoreCase) ||
+                                 a.DisplayName.Contains(target, StringComparison.OrdinalIgnoreCase));
 
         if (adapter != null && adapter.CanHandle(payload))
         {
-            await adapter.HandleAsync(payload);
+            await adapter.SendAsync(payload);
         }
     }
 }

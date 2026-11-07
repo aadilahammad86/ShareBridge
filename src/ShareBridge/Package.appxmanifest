@@ -11,7 +11,7 @@
   <Identity
     Name="ShareBridge.App"
     Publisher="CN=ShareBridge Dev"
-    Version="1.0.0.0" />
+    Version="1.0.1.0" />
 
   <mp:PhoneIdentity PhoneProductId="F1CB88F6-4A81-4E2F-85C4-6C7963B4B17B" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
@@ -30,7 +30,7 @@
   </Dependencies>
 
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="en-us"/>
   </Resources>
 
   <Applications>
